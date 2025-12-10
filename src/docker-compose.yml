@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: app
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - COMPOSER_ALLOW_SUPERUSER=1
+    expose:
+      - "9000"
+    depends_on:
+      - redis
+    command: bash -c "mkdir -p storage bootstrap/cache && chmod -R 777 storage bootstrap/cache && php-fpm -F"
+
+  web:
+    image: nginx:stable-alpine
+    container_name: web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx:/etc/nginx/conf.d:ro
+    depends_on:
+      - app
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
