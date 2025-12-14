@@ -22,7 +22,7 @@ const TaskList: React.FC = () => {
     };
 
     const handleCreateTask = async (taskData: NewTaskData) => {
-        await axios.post('/api/tasks', taskData);
+        await axios.post(`/api/tasks/create`, taskData);
         fetchTasks();
     };
 
