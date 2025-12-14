@@ -52,7 +52,7 @@ const TaskList: React.FC = () => {
     });
 
     return (
-        <div>
+        <div className="w-[fit-content]">
             <div className="flex flex-row gap-5">
                 <div className="border-2 border-black px-10 py-2 m-5 rounded-md w-[fit-content] flex gap-5">
                     <button className={filter=="all"?'underline cursor-pointer':'cursor-pointer'} onClick={() => setFilter('all')}>All</button>
@@ -67,7 +67,7 @@ const TaskList: React.FC = () => {
                 </div>
             </div>
 
-            <div>
+            <div className="flex flex-col items-center">
                 {filteredTasks.map(task => (
                     <Task
                         key={task.id}
