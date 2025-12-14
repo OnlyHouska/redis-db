@@ -1,12 +1,21 @@
-version: "3.8"
 services:
+  composer-app:
+    container_name: redis-db_php8.4-runner
+    image: redis-db:php8.4-runner
+    build:
+      context: ../../   # Navigate to the project root from bin/docker
+      dockerfile: bin/docker/composer-app/Dockerfile
+    volumes:
+      - ../../:/app    # Mount the project root to /app in the container
+    pull_policy: never
+
   app:
+    container_name: app
     build:
       context: .
-      dockerfile: docker/php/Dockerfile
-    container_name: app
+      dockerfile: php/Dockerfile
     volumes:
-      - ./:/var/www/html
+      - ../../:/var/www/html
     environment:
       - COMPOSER_ALLOW_SUPERUSER=1
     expose:
@@ -21,8 +30,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./:/var/www/html:ro
-      - ./docker/nginx:/etc/nginx/conf.d:ro
+      - ../../:/var/www/html:ro
+      - ./nginx:/etc/nginx/conf.d:ro
     depends_on:
       - app
 

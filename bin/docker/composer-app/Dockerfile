@@ -1,0 +1,39 @@
+FROM php:8.4-cli
+
+# Set the /app as a current working directory
+# All subsequent commands:
+# - RUN
+# - COPY (its destination path, if not absolute)
+# - CMD
+# shall execute inside of this docker directory
+WORKDIR /app
+
+# Copy the project root (all its files) into the /app directory of docker container
+# Beware, that ../../ must be within docker's context
+COPY ../../ /app
+
+# Install git and unzip for pulling composer packages
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip
+
+RUN pecl install redis && docker-php-ext-enable redis
+
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN git config --global --add safe.directory /app
+
+# Install composer into container
+# Multistage COPY -> composer gets pulled temporarily and copied into docker container
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN composer install
+
+# Copy the entrypoint script
+COPY bin/docker/composer-app/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Make the entrypoint script executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["entrypoint.sh"]

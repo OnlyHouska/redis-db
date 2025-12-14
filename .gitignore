@@ -1,24 +1,51 @@
-*.log
+# Composer dependencies
+/vendor/
+
+# Composer lock (optional for libraries)
+composer.lock
+
+# Package lock
+package-lock.json
+
+# IDE / Editor settings
+/.idea/
+/.vscode/
+/nbproject/
+*.iml
+
+# OS generated files
 .DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-Homestead.json
-Homestead.yaml
 Thumbs.db
+
+# Logs and debug files
+*.log
+
+# PHPUnit / Pest
+/phpunit.xml
+/phpunit.xml.cache
+/pest.php
+/.phpunit.result.cache
+
+# Coverage output
+/coverage/
+/.clover
+
+# Build artifacts
+/build/
+/dist/
+*.phar
+
+# Cache
+/cache/
+/.tmp/
+/temp/
+.php-cs-fixer.cache
+
+# Node (if your package has JS assets)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Docker junk
+/.docker-compose.override.yml

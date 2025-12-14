@@ -8,9 +8,9 @@ RUN apt-get update \
  && docker-php-ext-enable redis \
  && rm -rf /var/lib/apt/lists/*
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
-COPY docker/php/php-fpm.conf /usr/local/etc/php-fpm.d/zz-docker.conf
-COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY ./php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
+COPY ./php/php-fpm.conf /usr/local/etc/php-fpm.d/zz-docker.conf
+COPY ./php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
 RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
