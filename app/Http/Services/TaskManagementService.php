@@ -2,15 +2,20 @@
 
 namespace App\Http\Services;
 
+use App\Auth\AuthContext;
 use App\Constants\KeyType;
 use App\Http\RedisConnection;
 use Exception;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class TaskManagementService
+readonly class TaskManagementService
 {
-    public static function getTasks(int $userId, ?int $taskId = null): array
+    public function __construct(
+        private AuthContext $auth
+    ) {}
+
+    public function getTasks(?int $taskId = null): array
     {
         $taskKeys = RedisConnection::getKeys(KeyType::Task, $taskId);
 
@@ -18,7 +23,7 @@ class TaskManagementService
         foreach ($taskKeys as $taskKey) {
             $task = RedisConnection::getKey($taskKey);
 
-            if (($task['user_id'] ?? null) === $userId) {
+            if (($task['user_id'] ?? null) === $this->auth->getUser()) {
                 $tasks[] = $task;
             }
         }
@@ -29,11 +34,11 @@ class TaskManagementService
     /**
      * @throws Exception
      */
-    public static function createEntity(KeyType $type, array $data, int $userId): void
+    public function createEntity(KeyType $type, array $data): void
     {
         $id = RedisConnection::incrementCounter($type);
         $data['id'] = $id;
-        $data['user_id'] = $userId;
+        $data['user_id'] = $this->auth->getUser();
 
         $key = "$type->value:$id";
         $result = RedisConnection::setKey($key, $data, 30 * 24 * 60 * 60);
@@ -43,7 +48,7 @@ class TaskManagementService
         }
     }
 
-    public static function updateEntity(KeyType $type, array $data, int $id, int $userId, ?int $ttl = null): bool
+    public function updateEntity(KeyType $type, array $data, int $id, ?int $ttl = null): bool
     {
         $key = "$type->value:$id";
 
@@ -53,7 +58,7 @@ class TaskManagementService
 
         $entity = RedisConnection::getKey($key);
 
-        if (($entity['user_id'] ?? null) != $userId) {
+        if (($entity['user_id'] ?? null) != $this->auth->getUser()) {
             throw new AccessDeniedHttpException("You are not allowed to edit this task");
         }
 
@@ -66,7 +71,7 @@ class TaskManagementService
         return RedisConnection::setKey($key, $updatedEntity, $ttl);
     }
 
-    public static function deleteEntity(KeyType $type, int $id, int $userId): bool
+    public function deleteEntity(KeyType $type, int $id): bool
     {
         $key = "$type->value:$id";
 
@@ -76,7 +81,7 @@ class TaskManagementService
 
         $entity = RedisConnection::getKey($key);
 
-        if (($entity['user_id'] ?? null) != $userId) {
+        if (($entity['user_id'] ?? null) != $this->auth->getUser()) {
             throw new AccessDeniedHttpException("You are not allowed to edit this $type->name");
         }
 

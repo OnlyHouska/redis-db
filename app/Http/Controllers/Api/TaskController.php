@@ -12,10 +12,14 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    public function __construct(
+        private readonly TaskManagementService $service
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $tasks = TaskManagementService::getTasks($request->get('user_id'));
+            $tasks = $this->service->getTasks($request->get('user_id'));
             usort($tasks, fn($a, $b) => strtotime($b['created_at']) - strtotime($a['created_at']));
             return response()->json($tasks);
         } catch (Exception $e) {
@@ -42,7 +46,7 @@ class TaskController extends Controller
                 'created_at'    => now()->toISOString(),
             ];
 
-            TaskManagementService::createEntity(KeyType::Task, $task, $request->get('user_id'));
+            $this->service->createEntity(KeyType::Task, $task, $request->get('user_id'));
 
             return response()->json($task, 201);
         } catch (Exception $e) {
@@ -60,7 +64,7 @@ class TaskController extends Controller
                 'completed' => !$task['completed'],
             ];
 
-            TaskManagementService::updateEntity(KeyType::Task, $updateObject, $id, $request->get('user_id'));
+            $this->service->updateEntity(KeyType::Task, $updateObject, $id, $request->get('user_id'));
 
             return response()->json(RedisConnection::getKey($key), 201);
         } catch (Exception $e) {
@@ -71,7 +75,7 @@ class TaskController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            TaskManagementService::deleteEntity(KeyType::Task, $id, $request->get('user_id'));
+            $this->service->deleteEntity(KeyType::Task, $id, $request->get('user_id'));
             return response()->json(['message' => 'Task deleted successfully']);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

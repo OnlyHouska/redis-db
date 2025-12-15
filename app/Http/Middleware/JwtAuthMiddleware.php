@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Auth\AuthContext;
 use App\Http\RedisConnection;
 use Closure;
 use Exception;
@@ -33,13 +34,14 @@ class JwtAuthMiddleware
                 new Key(config('app.key'), 'HS256')
             );
 
-            $request->attributes->add([
-                'user_id' => $decoded->sub,
-                'email'   => $decoded->email,
-                'jwt'     => $token,
-            ]);
+            $authContext = new AuthContext(
+                userId: (int) $decoded->sub,
+                email: (string) $decoded->email,
+                jwt: $token
+            );
 
-        } catch (Exception $e) {
+            app()->instance(AuthContext::class, $authContext);
+        } catch (Exception) {
             return response()->json([
                 'error' => 'Invalid or expired token',
             ], 401);

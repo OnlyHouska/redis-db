@@ -2,23 +2,18 @@
 
 namespace App\Providers;
 
+use App\Auth\AuthContext;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        $this->app->scoped(AuthContext::class, function () {
+            throw new RuntimeException('AuthContext not initialized');
+        });
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        //
-    }
+    public function boot(): void {}
 }
