@@ -25,11 +25,9 @@ Route::post('/auth/login', [UserController::class, 'login']);
 |--------------------------------------------------------------------------
 | Protected routes (JWT)
 |--------------------------------------------------------------------------
-| Uncomment once JWT middleware is ready
-|--------------------------------------------------------------------------
 */
 
-// Route::middleware('auth.jwt')->group(function () {
-//     Route::get('/auth/me', [UserController::class, 'me']);
-//     Route::post('/auth/logout', [UserController::class, 'logout']);
-// });
+ Route::middleware('auth.jwt')->group(function () {
+     Route::get('/auth/me', [UserController::class, 'me']);
+     Route::post('/auth/logout', [UserController::class, 'logout']);
+ });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\RedisConnection;
 use App\Http\Services\UserManagementService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -87,5 +88,39 @@ class UserController extends Controller
         ];
 
         return JWT::encode($payload, config('app.key'), 'HS256');
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'id'    => $request->get('user_id'),
+            'email' => $request->get('email'),
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        try {
+            $token = $request->get('jwt');
+
+            if (!$token) {
+                return response()->json(['error' => 'Token missing'], 400);
+            }
+
+            RedisConnection::setKey(
+                "jwt:blacklist:$token",
+                ['revoked' => true],
+                60 * 60 * 24
+            );
+
+            return response()->json([
+                'message' => 'Successfully logged out',
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
