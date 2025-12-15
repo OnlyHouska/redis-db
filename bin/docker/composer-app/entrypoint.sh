@@ -17,9 +17,13 @@ show_help() {
   echo "  docker-compose run --rm app cache:clear"
 }
 
+artisan_serve() {
+  exec php artisan serve --host=0.0.0.0 --port=8080
+}
+
 # If no arguments are provided, show the help message
 if [ "$#" -eq 0 ]; then
-  show_help
+  artisan_serve
   exit 0
 fi
 

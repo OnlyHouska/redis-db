@@ -12,11 +12,15 @@ WORKDIR /app
 # Beware, that ../../ must be within docker's context
 COPY ../../ /app
 
-# Install git and unzip for pulling composer packages
+# Install
+# - git and unzip for pulling composer packages
+# - php dependencies (cli php is minimal, redis wouldn't work without it)
 RUN apt-get update && apt-get install -y \
     git \
-    unzip
+    unzip \
+    $PHPIZE_DEPS
 
+# Compile redis extension and enable
 RUN pecl install redis && docker-php-ext-enable redis
 
 RUN rm -rf /var/lib/apt/lists/*

@@ -5,46 +5,34 @@ services:
     build:
       context: ../../   # Navigate to the project root from bin/docker
       dockerfile: bin/docker/composer-app/Dockerfile
+    ports:
+      - "8080:8080"     # Port for laravel app
     volumes:
-      - ../../:/app    # Mount the project root to /app in the container
+      - ../../:/app     # Mount the project root to /app in the container
     pull_policy: never
 
-  app:
-    container_name: app
+  frontend:
+    container_name: redis-db_frontend
+    image: redis-db:frontend
     build:
-      context: .
-      dockerfile: php/Dockerfile
-    volumes:
-      - ../../:/var/www/html
-    environment:
-      - COMPOSER_ALLOW_SUPERUSER=1
-    expose:
-      - "9000"
-    depends_on:
-      - redis
-    command: bash -c "mkdir -p storage bootstrap/cache && chmod -R 777 storage bootstrap/cache && php-fpm -F"
-
-  web:
-    image: nginx:stable-alpine
-    container_name: web
+      context: ../../
+      dockerfile: bin/docker/frontend/Dockerfile
     ports:
-      - "8080:80"
+      - "5173:5173"     # Port for vite
     volumes:
-      - ../../:/var/www/html:ro
-      - ./nginx:/etc/nginx/conf.d:ro
-    depends_on:
-      - app
+      - ../../:/app
+    pull_policy: never
 
   redis:
+    container_name: redis-db_redis
     image: redis:alpine
-    container_name: redis
     ports:
       - "6379:6379"
     restart: unless-stopped
 
   redis-commander:
+    container_name: redis-db_redis-commander
     image: rediscommander/redis-commander:latest
-    container_name: redis-commander
     environment:
       - REDIS_HOSTS=local:redis:6379
     ports:
