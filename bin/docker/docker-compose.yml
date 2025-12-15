@@ -6,7 +6,7 @@ services:
       context: ../../   # Navigate to the project root from bin/docker
       dockerfile: bin/docker/composer-app/Dockerfile
     ports:
-      - "8080:8080"     # Port for laravel app
+      - "3000:8080"     # Port for laravel app
     volumes:
       - ../../:/app     # Mount the project root to /app in the container
     pull_policy: never
@@ -28,14 +28,27 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+    volumes:
+      - ../../redis-data:/data
     restart: unless-stopped
 
-  redis-commander:
-    container_name: redis-db_redis-commander
-    image: rediscommander/redis-commander:latest
-    environment:
-      - REDIS_HOSTS=local:redis:6379
+  redis-insight:
+    container_name: redis-db_redis-insight
+    image: redis/redisinsight:latest
     ports:
-      - "8081:8081"
+      - "8001:5540"
     depends_on:
       - redis
+    restart: unless-stopped
+
+  redis-insight-init:
+    image: curlimages/curl:latest
+    environment:
+      REDIS_INSIGHT_DB_NAME: task-tracker
+      REDIS_INSIGHT_DB_HOST: redis
+      REDIS_INSIGHT_DB_PORT: 6379
+    volumes:
+      - ./redis-insight-init/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      - redis-insight

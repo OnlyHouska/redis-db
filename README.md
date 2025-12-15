@@ -17,8 +17,8 @@ docker compose up
 - [ ] Redis Streams *(Lukáš)*
 - [ ] limit category to a specified set of values *(Lukáš)*
 - [ ] edit README file *(Lukáš)*
-- [ ] configure data persistence *(Lukáš)*
-- [ ] change access ports to 3000 for frontend and 8001 for RedisInsight *(Lukáš)*
+- [x] configure data persistence *(Lukáš)*
+- [x] change access ports to 3000 for frontend and 8001 for RedisInsight *(Lukáš)*
 - [ ] create seed script to add 10 test tasks *(Lukáš)*
 - [ ] add comments to code - AI generated comments will do *(Lukáš)*
 - [ ] Redis PubSub *(Honza)*
