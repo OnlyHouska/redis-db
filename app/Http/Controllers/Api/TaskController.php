@@ -12,10 +12,10 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $tasks = TaskManagementService::getTasks();
+            $tasks = TaskManagementService::getTasks($request->get('user_id'));
             usort($tasks, fn($a, $b) => strtotime($b['created_at']) - strtotime($a['created_at']));
             return response()->json($tasks);
         } catch (Exception $e) {
@@ -42,7 +42,7 @@ class TaskController extends Controller
                 'created_at'    => now()->toISOString(),
             ];
 
-            TaskManagementService::createEntity(KeyType::Task, $task);
+            TaskManagementService::createEntity(KeyType::Task, $task, $request->get('user_id'));
 
             return response()->json($task, 201);
         } catch (Exception $e) {
@@ -50,7 +50,7 @@ class TaskController extends Controller
         }
     }
 
-    public function toggle($id): JsonResponse
+    public function toggle(Request $request, $id): JsonResponse
     {
         try {
             $key = KeyType::Task->value . ":{$id}";
@@ -60,7 +60,7 @@ class TaskController extends Controller
                 'completed' => !$task['completed'],
             ];
 
-            TaskManagementService::updateEntity(KeyType::Task, $updateObject, $id);
+            TaskManagementService::updateEntity(KeyType::Task, $updateObject, $id, $request->get('user_id'));
 
             return response()->json(RedisConnection::getKey($key), 201);
         } catch (Exception $e) {
@@ -68,12 +68,12 @@ class TaskController extends Controller
         }
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            TaskManagementService::deleteEntity(KeyType::Task, $id);
+            TaskManagementService::deleteEntity(KeyType::Task, $id, $request->get('user_id'));
             return response()->json(['message' => 'Task deleted successfully']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
