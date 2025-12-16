@@ -30,6 +30,15 @@ A full-stack task management application built with Laravel 12 (PHP 8.4) and Red
 
 ## Architecture
 
+![Architecture Diagram](docs/diagram.jpg)
+
+The diagram illustrates:
+- **Integrated Container Architecture** - Laravel 12 + Vite running on port 3000
+- **Frontend Layer** - React application injected via Vite through Laravel Blade templates
+- **Backend Layer** - Laravel API endpoints with JWT authentication middleware
+- **Data Layer** - Redis Stack with RedisJSON, Redis Streams for event logging
+- **Data Flow** - Complete request/response cycle from user to database
+
 ### Data Storage
 All data is stored in Redis using the RedisJSON module:
 - **Users**: `user:{id}` - User profiles with hashed passwords
@@ -106,6 +115,88 @@ volumes:
   redis-data:  # Survives container restarts
 ```
 
+## Database Seeding
+
+The project includes a comprehensive seeding script (`seed.php`) that populates Redis with realistic test data for development and testing.
+
+### What the Seeder Creates
+
+The seeder generates:
+
+**3 Test Users:**
+- `john.doe@example.com` / Password: `password123`
+- `jane.smith@example.com` / Password: `password123`
+- `bob.wilson@example.com` / Password: `password123`
+
+**5 Random Tasks per User (15 tasks total):**
+- Random titles from a predefined list (e.g., "Complete project documentation", "Review pull requests")
+- Random descriptions with varying priorities
+- Random categories: Work, Personal, Shopping, Study, Health, Other
+- Realistic creation dates (0-60 days ago with random timestamps)
+- Realistic due dates (0-30 days from creation date)
+- Random completion status (completed/incomplete)
+
+### Running the Seeder
+
+```bash
+composer run-seeder
+```
+
+### Seeder Features
+
+- **Idempotent Design**: Can be run multiple times safely
+    - Skips existing users (finds by email)
+    - Creates new tasks for existing users
+- **Realistic Data**:
+    - Varied timestamps spanning 60 days
+    - Logical due dates based on creation dates
+    - Diverse task categories and descriptions
+- **Automatic Event Logging**:
+    - All created tasks are logged to Redis Streams
+    - Event type: `task_created`
+    - Includes user_id and timestamp
+- **User Context**:
+    - Each task is properly associated with its creator
+    - Tasks include `user_id` for proper scoping
+- **TTL Management**:
+    - Tasks automatically expire after 30 days (as per application logic)
+
+### Verifying Seeded Data
+
+After running the seeder, verify the data in RedisInsight:
+
+1. Open http://localhost:8001 in your browser
+2. Navigate to Browser
+3. Search for keys by pattern (e.g., `user:*`, `task:*`)
+4. Click on any key to view its JSON content
+5. Check Streams section for `stream:task-events`
+
+### Seeder Output Example
+
+```
+Created user: john.doe@example.com (ID: 1)
+  Created 5 tasks for john.doe@example.com
+
+User jane.smith@example.com already exists, finding...
+Found user: jane.smith@example.com (ID: 2)
+  Created 5 tasks for jane.smith@example.com
+
+Created user: bob.wilson@example.com (ID: 3)
+  Created 5 tasks for bob.wilson@example.com
+
+Seeding completed!
+```
+
+### Customizing Seed Data
+
+The seeder uses predefined arrays that can be easily customized in `seed.php`:
+
+- **`$titles`** - Array of task titles
+- **`$descriptions`** - Array of task descriptions
+- **`$users`** - Array of user profiles to create
+- Task count per user (currently 5, adjustable in the loop)
+- Date ranges (currently 0-60 days for creation, 0-30 days for due dates)
+
 ## API Endpoints
 
 ### Authentication
@@ -168,7 +259,9 @@ Redis is configured with:
 │   │   └── Dockerfile                      # Vite frontend
 │   └── redis-insight-init/
 │       └── entrypoint.sh                   # Redis Insight auto-config
-└── docker compose.yml                      # Docker orchestration
+├── docker compose.yml                      # Docker orchestration
+├── seed.php                                # Database seeder script
+└── architecture-diagram.drawio             # System architecture diagram
 ```
 
 ## Development Notes
@@ -189,7 +282,96 @@ Redis is configured with:
 - ✅ User-scoped data access
 - ✅ Authorization checks on all operations
 
+### Development Workflow
+
+```bash
+# Install dependencies
+docker compose exec composer-app composer install
+
+# Run database seeder
+docker compose exec composer-app php seed.php
+
+# Access Redis CLI for debugging
+docker compose exec redis redis-cli
+
+# View application logs
+docker compose logs -f composer-app
+
+# Restart backend after code changes
+docker compose restart composer-app
+```
+
+## Testing the Application
+
+### 1. Start the Application
+```bash
+docker compose up -d
+```
+
+### 2. Seed Test Data
+```bash
+docker compose exec composer-app php seed.php
+```
+
+### 3. Test Authentication
+```bash
+# Register a new user
+curl -X POST http://localhost:3000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "name": "Test User",
+    "password": "password123"
+  }'
+
+# Login with seeded user
+curl -X POST http://localhost:3000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "password": "password123"
+  }'
+```
+
+### 4. Test Task Operations
+```bash
+# Get user's tasks (replace TOKEN with actual JWT)
+curl http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer TOKEN"
+
+# Create a new task
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "New Task",
+    "description": "Task description",
+    "category": "Work",
+    "due_date": "2025-12-31"
+  }'
+
+# Toggle task completion
+curl -X POST http://localhost:3000/api/tasks/1/toggle \
+  -H "Authorization: Bearer TOKEN"
+
+# Delete a task
+curl -X DELETE http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer TOKEN"
+```
+
+### 5. Verify in Redis Insight
+1. Open http://localhost:8001
+2. Browse keys to see created users and tasks
+3. Check Redis Streams for event logs
+
 ## Troubleshooting
+
+### Redis connection issues
+```bash
+# Test Redis connectivity from backend
+docker compose exec composer-app php artisan tinker
+>>> Redis::ping()
+```
 
 ### Container logs
 ```bash
@@ -211,3 +393,24 @@ docker compose build composer-app
 # Rebuild all services
 docker compose build --no-cache
 ```
+
+### Clear Redis data
+```bash
+# Delete all Redis data
+docker compose exec redis redis-cli FLUSHALL
+
+# Re-seed database
+docker compose exec composer-app php seed.php
+```
+
+## License
+
+MIT License
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
