@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Redis;
  *
  * Handles CRUD operations for tasks including listing, creating,
  * toggling completion status, and deleting tasks.
+ * Publishes real-time notifications via Redis Pub/Sub.
  */
 class TaskController extends Controller
 {
@@ -84,7 +85,7 @@ class TaskController extends Controller
             // Create the task in Redis
             $created = $this->service->createEntity(KeyType::Task, $task);
 
-            // PUBLIKUJ NOTIFIKACI do Redis Pub/Sub
+            // Publish notification to Redis Pub/Sub for real-time updates
             $redis = Redis::connection()->client();
             $redis->publish('tasks:new', json_encode([
                 'type' => 'task_created',
@@ -126,7 +127,7 @@ class TaskController extends Controller
             // Update the task
             $this->service->updateEntity(KeyType::Task, $updateObject, $id);
 
-            // Get updated task and publish notification
+            // Get updated task and publish notification for real-time updates
             $updatedTask = RedisConnection::getKey($key);
 
             $redis = Redis::connection()->client();
@@ -136,7 +137,6 @@ class TaskController extends Controller
                 'timestamp' => now()->toISOString()
             ]));
 
-            // Return the updated task
             return response()->json($updatedTask, 201);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -155,7 +155,7 @@ class TaskController extends Controller
             // Delete the task (with authorization check inside service)
             $this->service->deleteEntity(KeyType::Task, $id);
 
-            // Publish deletion notification
+            // Publish deletion notification for real-time updates
             $redis = Redis::connection()->client();
             $redis->publish('tasks:deleted', json_encode([
                 'type' => 'task_deleted',
@@ -172,6 +172,8 @@ class TaskController extends Controller
     /**
      * Subscribe to real-time task updates via Server-Sent Events
      *
+     * Streams Redis Pub/Sub messages to clients for live updates
+     *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function subscribe()
@@ -179,7 +181,7 @@ class TaskController extends Controller
         return response()->stream(function () {
             $redis = Redis::connection()->client();
 
-            // Subscribe to all task channels
+            // Subscribe to all task-related channels and stream messages to client
             $redis->subscribe(['tasks:new', 'tasks:updated', 'tasks:deleted'], function ($message) {
                 echo "data: " . $message . "\n\n";
                 ob_flush();

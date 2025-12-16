@@ -13,7 +13,7 @@ use Firebase\JWT\JWT;
 
 /**
  * API Controller for user authentication and management
- * 
+ *
  * Handles user registration, login, logout, and profile retrieval
  * using JWT tokens for authentication.
  */
@@ -21,9 +21,9 @@ class UserController extends Controller
 {
     /**
      * Register a new user
-     * 
+     *
      * Creates a new user account and returns a JWT token for immediate authentication
-     * 
+     *
      * @param Request $request HTTP request with user registration data
      * @return JsonResponse User data with JWT token or error message
      */
@@ -67,7 +67,7 @@ class UserController extends Controller
 
     /**
      * Authenticate a user and return JWT token
-     * 
+     *
      * @param Request $request HTTP request with login credentials
      * @return JsonResponse User data with JWT token or error message
      */
@@ -107,9 +107,9 @@ class UserController extends Controller
 
     /**
      * Generate a JWT token for a user
-     * 
+     *
      * Token is valid for 24 hours and includes user ID and email
-     * 
+     *
      * @param int $userId User ID
      * @param string $email User email
      * @return string JWT token
@@ -131,9 +131,9 @@ class UserController extends Controller
 
     /**
      * Get current authenticated user's profile
-     * 
+     *
      * Requires valid JWT token in Authorization header
-     * 
+     *
      * @param Request $request HTTP request with user context
      * @return JsonResponse User profile data
      */
@@ -148,9 +148,9 @@ class UserController extends Controller
 
     /**
      * Logout user by blacklisting their JWT token
-     * 
+     *
      * Adds the token to a Redis blacklist with 24h TTL
-     * 
+     *
      * @param Request $request HTTP request with JWT token
      * @return JsonResponse Success message or error
      */

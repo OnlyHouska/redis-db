@@ -13,6 +13,12 @@ export interface NewTaskData {
     due_date?: string;
 }
 
+/**
+ * Modal component for creating new tasks
+ *
+ * Provides a form with validation for task title, category, description, and due date.
+ * Resets form state on successful submission or cancel.
+ */
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState<NewTaskData>({
         title: '',
@@ -34,6 +40,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSu
         'Other'
     ];
 
+    // Update form field values
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormData({
             ...formData,
@@ -41,6 +48,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSu
         });
     };
 
+    // Validate and submit task
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
@@ -58,6 +66,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSu
         setIsSubmitting(true);
         try {
             await onSubmit(formData);
+            // Reset form on success
             setFormData({ title: '', description: '', category: '', due_date: '' });
             onClose();
         } catch (err) {
@@ -67,6 +76,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSu
         }
     };
 
+    // Reset form and close modal
     const handleClose = () => {
         setFormData({ title: '', description: '', category: '', due_date: '' });
         setError('');
@@ -80,7 +90,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSu
 
             <div
                 className="fixed bg-opacity-10 flex items-center justify-center z-50 w-[fit-content] h-[fit-content] border-2 rounded-md backdrop-blur-md py-5 px-8"
-                // onClick={handleClose}
             >
                 <div onClick={(e) => e.stopPropagation()} className="">
                     <div className="flex flex-row justify-between w-full mb-5">

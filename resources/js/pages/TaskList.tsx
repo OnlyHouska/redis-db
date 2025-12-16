@@ -4,6 +4,12 @@ import axios from 'axios';
 import Task, { TaskData } from '../components/Task';
 import CreateTaskModal, { NewTaskData } from '../components/CreateTaskModal';
 
+/**
+ * Task list page component
+ *
+ * Main task management interface with filtering, real-time polling updates,
+ * and notifications. Polls server every 2 seconds for task changes.
+ */
 const TaskList: React.FC = () => {
     const navigate = useNavigate();
     const [tasks, setTasks] = useState<TaskData[]>([]);
@@ -13,6 +19,7 @@ const TaskList: React.FC = () => {
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
     const [notification, setNotification] = useState<string>('');
 
+    // Track previous task state to detect changes without causing re-renders
     const lastTaskIdsRef = useRef<Set<number>>(new Set());
     const lastTaskStatesRef = useRef<Map<number, boolean>>(new Map());
 
@@ -27,6 +34,7 @@ const TaskList: React.FC = () => {
         'Other'
     ];
 
+    // Initialize user data and start polling
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -34,6 +42,7 @@ const TaskList: React.FC = () => {
         }
         fetchTasks();
 
+        // Poll for task updates every 2 seconds
         const pollInterval = setInterval(() => {
             fetchTasksQuietly();
         }, 2000);
@@ -43,6 +52,7 @@ const TaskList: React.FC = () => {
         };
     }, []);
 
+    // Initial task fetch with error handling
     const fetchTasks = async () => {
         try {
             const response = await axios.get<TaskData[]>('/api/tasks');
@@ -57,11 +67,13 @@ const TaskList: React.FC = () => {
         }
     };
 
+    // Silent polling - detects new, deleted, and state-changed tasks
     const fetchTasksQuietly = async () => {
         try {
             const response = await axios.get<TaskData[]>('/api/tasks');
             const currentTaskIds = new Set(response.data.map(t => t.id));
 
+            // Detect new tasks
             const newTaskIds = [...currentTaskIds].filter(id => !lastTaskIdsRef.current.has(id));
             if (newTaskIds.length > 0) {
                 const newTask = response.data.find(t => t.id === newTaskIds[0]);
@@ -70,11 +82,13 @@ const TaskList: React.FC = () => {
                 }
             }
 
+            // Detect deleted tasks
             const deletedTaskIds = [...lastTaskIdsRef.current].filter(id => !currentTaskIds.has(id));
             if (deletedTaskIds.length > 0) {
                 showNotification(`Task deleted`, 'info');
             }
 
+            // Detect completion state changes
             response.data.forEach(task => {
                 const previousState = lastTaskStatesRef.current.get(task.id);
                 if (previousState !== undefined && previousState !== task.completed) {
@@ -86,6 +100,7 @@ const TaskList: React.FC = () => {
                 }
             });
 
+            // Update state and tracking refs
             setTasks(response.data);
             lastTaskIdsRef.current = currentTaskIds;
 
@@ -93,10 +108,11 @@ const TaskList: React.FC = () => {
             response.data.forEach(t => stateMap.set(t.id, t.completed));
             lastTaskStatesRef.current = stateMap;
         } catch (error) {
-            // Silent fail
+            // Silent fail - don't disrupt user experience during polling
         }
     };
 
+    // Display temporary notification (auto-hide after 4s)
     const showNotification = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
         setNotification(message);
         setTimeout(() => setNotification(''), 4000);
@@ -119,6 +135,7 @@ const TaskList: React.FC = () => {
     const handleDelete = async (id: number) => {
         try {
             await axios.delete(`/api/tasks/${id}/delete`);
+            // Optimistic UI update
             setTasks(tasks.filter(task => task.id !== id));
             lastTaskIdsRef.current.delete(id);
             lastTaskStatesRef.current.delete(id);
@@ -133,6 +150,7 @@ const TaskList: React.FC = () => {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
+            // Clear local auth data and redirect
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             delete axios.defaults.headers.common['Authorization'];
@@ -140,6 +158,7 @@ const TaskList: React.FC = () => {
         }
     };
 
+    // Apply status and category filters
     const filteredTasks = tasks.filter(task => {
         if (filter === 'completed' && !task.completed) return false;
         if (filter === 'pending' && task.completed) return false;
@@ -149,13 +168,14 @@ const TaskList: React.FC = () => {
 
     return (
         <div className="w-full">
+            {/* Notification toast */}
             {notification && (
                 <div className="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in max-w-xs md:max-w-md">
                     {notification}
                 </div>
             )}
 
-            {/* Header */}
+            {/* Header with user info and logout */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-5 py-3 border-b-2 border-black gap-3">
                 <div className="flex flex-col md:flex-row gap-2 md:gap-3 md:items-center">
                     <span className="font-semibold">Welcome, {user?.name || 'User'}!</span>
@@ -170,7 +190,7 @@ const TaskList: React.FC = () => {
                 </button>
             </div>
 
-            {/* Stats */}
+            {/* Task statistics */}
             <div className="px-5 py-3 bg-gray-50 border-b border-gray-300">
                 <div className="flex flex-wrap gap-4 md:gap-6 text-sm">
                     <span>Total: <strong>{tasks.length}</strong></span>

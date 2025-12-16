@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import LoginModal from '../components/LoginModal';
 import RegisterModal from '../components/RegisterModal';
 
+/**
+ * Landing page component
+ *
+ * Displays login and register buttons that open their respective modal dialogs.
+ * Serves as the entry point for unauthenticated users.
+ */
 const HomePage: React.FC = () => {
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -26,6 +32,7 @@ const HomePage: React.FC = () => {
                 </div>
             </div>
 
+            {/* Authentication modals - controlled by state */}
             <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
             <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
         </>

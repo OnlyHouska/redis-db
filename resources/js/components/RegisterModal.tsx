@@ -7,6 +7,12 @@ interface RegisterModalProps {
     onClose: () => void;
 }
 
+/**
+ * Modal component for user registration
+ *
+ * Creates new user account with name, email, and password validation.
+ * Stores JWT token in localStorage and redirects to tasks page on success.
+ */
 const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -17,6 +23,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string>('');
 
+    // Update form field values
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -24,10 +31,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
         });
     };
 
+    // Validate and submit registration
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
 
+        // Client-side password validation
         if (formData.password.length < 6) {
             setError('Password must be at least 6 characters');
             return;
@@ -36,24 +45,22 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
         setIsSubmitting(true);
 
         try {
-            console.log('Sending registration data:', formData); // DEBUG
             const response = await axios.post('/api/auth/register', formData);
-            console.log('Registration response:', response.data); // DEBUG
 
+            // Store auth token and user data
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
             setFormData({ name: '', email: '', password: '' });
             onClose();
             navigate('/tasks');
         } catch (err: any) {
-            console.error('Registration error:', err.response); // DEBUG
             setError(err.response?.data?.error || err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-
+    // Reset form and close modal
     const handleClose = () => {
         setFormData({ name: '', email: '', password: '' });
         setError('');

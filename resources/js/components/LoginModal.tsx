@@ -7,6 +7,12 @@ interface LoginModalProps {
     onClose: () => void;
 }
 
+/**
+ * Modal component for user login
+ *
+ * Authenticates user credentials and stores JWT token in localStorage.
+ * Redirects to tasks page on successful login.
+ */
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -16,6 +22,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string>('');
 
+    // Update form field values
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -23,6 +30,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         });
     };
 
+    // Submit login credentials and handle authentication
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
@@ -30,6 +38,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         try {
             const response = await axios.post('/api/auth/login', formData);
+            // Store auth token and user data
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
             setFormData({ email: '', password: '' });
@@ -42,6 +51,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
+    // Reset form and close modal
     const handleClose = () => {
         setFormData({ email: '', password: '' });
         setError('');
