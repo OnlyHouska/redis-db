@@ -14,7 +14,7 @@ docker compose up
 
 ## Backend
 
-- [ ] Redis Streams *(Lukáš)*
+- [x] Redis Streams *(Lukáš)*
 - [x] limit category to a specified set of values *(Lukáš)*
 - [ ] edit README file *(Lukáš)*
 - [x] configure data persistence *(Lukáš)*

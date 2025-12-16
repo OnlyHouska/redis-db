@@ -34,9 +34,10 @@ readonly class TaskManagementService
     /**
      * @throws Exception
      */
-    public function createEntity(KeyType $type, array $data): void
+    public function createEntity(KeyType $type, array $data): array
     {
         $id = RedisConnection::incrementCounter($type);
+
         $data['id'] = $id;
         $data['user_id'] = $this->auth->getUser();
 
@@ -46,6 +47,15 @@ readonly class TaskManagementService
         if (!$result) {
             throw new Exception("Failed to save $type->name to Redis");
         }
+
+        RedisConnection::addToStream($type, [
+            'event'             => "{$type->value}_created",
+            "{$type->value}_id" => $id,
+            'user_id'           => $this->auth->getUser(),
+            'timestamp'         => now()->toISOString(),
+        ]);
+
+        return $data;
     }
 
     public function updateEntity(KeyType $type, array $data, int $id, ?int $ttl = null): bool
@@ -68,7 +78,17 @@ readonly class TaskManagementService
             'user_id' => $entity['user_id'],
         ];
 
-        return RedisConnection::setKey($key, $updatedEntity, $ttl);
+        $result = RedisConnection::setKey($key, $updatedEntity, $ttl);
+
+        RedisConnection::addToStream($type, [
+            'event'             => "{$type->value}_updated",
+            "{$type->value}_id" => $id,
+            'user_id'           => $this->auth->getUser(),
+            'changes'           => json_encode(array_keys($data)),
+            'timestamp'         => now()->toISOString(),
+        ]);
+
+        return $result;
     }
 
     public function deleteEntity(KeyType $type, int $id): bool
@@ -85,6 +105,15 @@ readonly class TaskManagementService
             throw new AccessDeniedHttpException("You are not allowed to edit this $type->name");
         }
 
-        return RedisConnection::delKey($key);
+        $deleted = RedisConnection::delKey($key);
+
+        RedisConnection::addToStream($type, [
+            'event'             => "{$type->value}_deleted",
+            "{$type->value}_id" => $id,
+            'user_id'           => $this->auth->getUser(),
+            'timestamp'         => now()->toISOString(),
+        ]);
+
+        return $deleted;
     }
 }
