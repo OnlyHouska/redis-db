@@ -45,17 +45,11 @@
         "composer-update": [
             "docker compose run --rm composer-app composer update"
         ],
-        "phpstan": [
-            "docker compose run --rm composer-app php vendor/bin/phpstan analyze --memory-limit=1G"
-        ],
-        "cs-fixer": [
-            "docker compose run --rm composer-app php vendor/bin/php-cs-fixer fix ./src"
-        ],
-        "unit": [
-            "docker compose run --rm composer-app php vendor/bin/phpunit tests"
-        ],
         "php-run": [
             "docker compose run --rm composer-app php"
+        ],
+        "run-seeder": [
+            "@php-run ./seeder.php"
         ]
     },
     "config": {

@@ -17,10 +17,10 @@ class TaskController extends Controller
         private readonly TaskManagementService $service
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         try {
-            $tasks = $this->service->getTasks($request->get('user_id'));
+            $tasks = $this->service->getTasks();
             usort($tasks, fn($a, $b) => strtotime($b['created_at']) - strtotime($a['created_at']));
             return response()->json($tasks);
         } catch (Exception $e) {
@@ -51,7 +51,7 @@ class TaskController extends Controller
                 'created_at'    => now()->toISOString(),
             ];
 
-            $this->service->createEntity(KeyType::Task, $task, $request->get('user_id'));
+            $this->service->createEntity(KeyType::Task, $task);
 
             return response()->json($task, 201);
         } catch (Exception $e) {
@@ -59,7 +59,7 @@ class TaskController extends Controller
         }
     }
 
-    public function toggle(Request $request, $id): JsonResponse
+    public function toggle(int $id): JsonResponse
     {
         try {
             $key = KeyType::Task->value . ":{$id}";
@@ -69,7 +69,7 @@ class TaskController extends Controller
                 'completed' => !$task['completed'],
             ];
 
-            $this->service->updateEntity(KeyType::Task, $updateObject, $id, $request->get('user_id'));
+            $this->service->updateEntity(KeyType::Task, $updateObject, $id);
 
             return response()->json(RedisConnection::getKey($key), 201);
         } catch (Exception $e) {
@@ -77,10 +77,10 @@ class TaskController extends Controller
         }
     }
 
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
         try {
-            $this->service->deleteEntity(KeyType::Task, $id, $request->get('user_id'));
+            $this->service->deleteEntity(KeyType::Task, $id);
             return response()->json(['message' => 'Task deleted successfully']);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
