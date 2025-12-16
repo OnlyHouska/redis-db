@@ -11,12 +11,149 @@ A full-stack task management application built with Laravel 12 (PHP 8.4) and Red
 - **Redis Streams** - Event logging and audit trails
 
 ### Frontend
+- **React 18** - UI framework with TypeScript
 - **Vite** - Development server and build tool
+- **Laravel Blade** - React injection template
+- **Tailwind CSS** - Utility-first styling
 - **Port 5173** - Frontend development server
 
 ### DevOps
 - **Docker** - Containerized development environment
 - **Redis Insight** - Redis database management UI
+
+## Frontend Architecture
+
+The application uses a **hybrid rendering approach** where React is injected into Laravel via Blade templates and Vite:
+
+### Integration Flow
+
+1. **Entry Point**: Laravel serves `resources/views/welcome.blade.php`
+2. **Vite Assets**: Blade template loads React via `@vite()` directive
+3. **React Mount**: React application mounts to `#root` div
+4. **API Communication**: React communicates with Laravel API via JWT-protected endpoints
+
+### Template Structure
+```blade
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Task Tracker</title>
+    @vite(['resources/css/app.css'])
+</head>
+<body>
+<div id="root"></div>
+
+@vite(['resources/js/app.tsx'])
+</body>
+</html>
+```
+
+### Frontend Features
+
+- ✅ **TypeScript** - Type-safe React components
+- ✅ **Component Architecture** - Modular, reusable UI components
+- ✅ **State Management** - React hooks for local state
+- ✅ **Form Handling** - Task creation and editing forms
+- ✅ **Authentication UI** - Login/Register forms with JWT token management
+- ✅ **Responsive Design** - Mobile-first approach with Tailwind CSS
+- ✅ **Client-side Routing** - SPA navigation without page reloads
+
+### React Application Structure
+```
+resources/
+├── css/
+│   └── app.css                    # Tailwind CSS entry point
+├── js/
+│   ├── app.tsx                    # React root component
+│   ├── components/
+│   │   ├── TaskList.tsx           # Task list component
+│   │   ├── TaskForm.tsx           # Create/Edit task form
+│   │   ├── TaskItem.tsx           # Individual task display
+│   │   ├── LoginForm.tsx          # Authentication form
+│   │   └── Navbar.tsx             # Navigation header
+│   ├── contexts/
+│   │   └── AuthContext.tsx        # JWT authentication context
+│   ├── hooks/
+│   │   ├── useTasks.ts            # Task API operations
+│   │   └── useAuth.ts             # Authentication logic
+│   ├── services/
+│   │   └── api.ts                 # Axios API client
+│   └── types/
+│       └── index.ts               # TypeScript interfaces
+└── views/
+    └── welcome.blade.php          # Laravel template (React entry)
+```
+
+### Development Workflow
+
+The Vite development server runs alongside Laravel:
+```bash
+# Terminal 1: Laravel backend (port 3000)
+docker compose up composer-app
+
+# Terminal 2: Vite dev server (port 5173)
+docker compose up frontend
+```
+
+**Hot Module Replacement (HMR):**
+- Changes to `.tsx` files instantly reflect in browser
+- No manual refresh needed
+- React component state preserved during updates
+
+### API Integration
+
+React communicates with Laravel API using Axios:
+```typescript
+// Example API call with JWT
+const response = await axios.get('http://localhost:3000/api/tasks', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+```
+
+### Styling Approach
+
+**Tailwind CSS** is configured via `tailwind.config.js`:
+```javascript
+export default {
+  content: [
+    "./resources/**/*.blade.php",
+    "./resources/**/*.tsx",
+    "./resources/**/*.ts",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+### Build Process
+
+**Development:**
+```bash
+# Vite serves React with HMR
+npm run dev
+```
+
+**Production:**
+```bash
+# Vite builds optimized React bundle
+npm run build
+
+# Laravel serves compiled assets from public/build/
+```
+
+### Browser Compatibility
+
+- Modern browsers (Chrome 90+, Firefox 88+, Safari 14+)
+- ES2020+ JavaScript features
+- CSS Grid and Flexbox layout
 
 ## Features
 
