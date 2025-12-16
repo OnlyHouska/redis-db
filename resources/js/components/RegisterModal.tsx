@@ -47,9 +47,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
         try {
             const response = await axios.post('/api/auth/register', formData);
 
-            // Store auth token and user data
+            // Store token - axios interceptor will use it automatically in next requests
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+
             setFormData({ name: '', email: '', password: '' });
             onClose();
             navigate('/tasks');

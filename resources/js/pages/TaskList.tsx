@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Task, { TaskData } from '../components/Task';
 import CreateTaskModal, { NewTaskData } from '../components/CreateTaskModal';
-import {setAuthToken} from "../utils/auth";
+import { setAuthToken } from "../utils/auth";
 
 /**
  * Task list page component
  *
- * Main task management interface with filtering, real-time polling updates,
- * and notifications. Polls server every 2 seconds for task changes.
+ * Main task management interface with filtering and notifications.
+ * Uses standard HTTP requests without real-time updates.
  */
 const TaskList: React.FC = () => {
     const navigate = useNavigate();
@@ -19,10 +19,6 @@ const TaskList: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
     const [notification, setNotification] = useState<string>('');
-
-    // Track previous task state to detect changes without causing re-renders
-    const lastTaskIdsRef = useRef<Set<number>>(new Set());
-    const lastTaskStatesRef = useRef<Map<number, boolean>>(new Map());
 
     const categories = [
         'Mathematics',
@@ -35,81 +31,22 @@ const TaskList: React.FC = () => {
         'Other'
     ];
 
-    // Initialize user data and start polling
+    // Initialize user data and fetch tasks
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
             setUser(JSON.parse(userData));
         }
         fetchTasks();
-
-        // Poll for task updates every 2 seconds
-        const pollInterval = setInterval(() => {
-            fetchTasksQuietly();
-        }, 2000);
-
-        return () => {
-            clearInterval(pollInterval);
-        };
     }, []);
 
-    // Initial task fetch with error handling
+    // Fetch tasks from API
     const fetchTasks = async () => {
         try {
             const response = await axios.get<TaskData[]>('/api/tasks');
             setTasks(response.data);
-            lastTaskIdsRef.current = new Set(response.data.map(t => t.id));
-
-            const stateMap = new Map<number, boolean>();
-            response.data.forEach(t => stateMap.set(t.id, t.completed));
-            lastTaskStatesRef.current = stateMap;
         } catch (error) {
             console.error('Error loading tasks:', error);
-        }
-    };
-
-    // Silent polling - detects new, deleted, and state-changed tasks
-    const fetchTasksQuietly = async () => {
-        try {
-            const response = await axios.get<TaskData[]>('/api/tasks');
-            const currentTaskIds = new Set(response.data.map(t => t.id));
-
-            // Detect new tasks
-            const newTaskIds = [...currentTaskIds].filter(id => !lastTaskIdsRef.current.has(id));
-            if (newTaskIds.length > 0) {
-                const newTask = response.data.find(t => t.id === newTaskIds[0]);
-                if (newTask) {
-                    showNotification(`New task created: ${newTask.title}`, 'success');
-                }
-            }
-
-            // Detect deleted tasks
-            const deletedTaskIds = [...lastTaskIdsRef.current].filter(id => !currentTaskIds.has(id));
-            if (deletedTaskIds.length > 0) {
-                showNotification(`Task deleted`, 'info');
-            }
-
-            // Detect completion state changes
-            response.data.forEach(task => {
-                const previousState = lastTaskStatesRef.current.get(task.id);
-                if (previousState !== undefined && previousState !== task.completed) {
-                    if (task.completed) {
-                        showNotification(`Task completed: ${task.title}`, 'success');
-                    } else {
-                        showNotification(`Task reactivated: ${task.title}`, 'info');
-                    }
-                }
-            });
-
-            // Update state and tracking refs
-            setTasks(response.data);
-            lastTaskIdsRef.current = currentTaskIds;
-
-            const stateMap = new Map<number, boolean>();
-            response.data.forEach(t => stateMap.set(t.id, t.completed));
-            lastTaskStatesRef.current = stateMap;
-        } catch (error) {
-            // Silent fail - don't disrupt user experience during polling
         }
     };
 
@@ -120,28 +57,35 @@ const TaskList: React.FC = () => {
     };
 
     const handleCreateTask = async (taskData: NewTaskData) => {
-        await axios.post(`/api/tasks/create`, taskData);
-        await fetchTasks();
+        try {
+            await axios.post(`/api/tasks/create`, taskData);
+            await fetchTasks();
+            showNotification('Task created successfully', 'success');
+        } catch (error) {
+            console.error('Error creating task:', error);
+            showNotification('Failed to create task', 'error');
+        }
     };
 
     const handleToggleComplete = async (id: number) => {
         try {
             await axios.put(`/api/tasks/${id}/toggle`);
-            await fetchTasksQuietly();
+            await fetchTasks();
+            showNotification('Task updated', 'success');
         } catch (error) {
             console.error('Error updating task:', error);
+            showNotification('Failed to update task', 'error');
         }
     };
 
     const handleDelete = async (id: number) => {
         try {
             await axios.delete(`/api/tasks/${id}/delete`);
-            // Optimistic UI update
             setTasks(tasks.filter(task => task.id !== id));
-            lastTaskIdsRef.current.delete(id);
-            lastTaskStatesRef.current.delete(id);
+            showNotification('Task deleted', 'info');
         } catch (error) {
             console.error('Error deleting task:', error);
+            showNotification('Failed to delete task', 'error');
         }
     };
 
