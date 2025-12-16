@@ -10,10 +10,11 @@ use App\Http\Services\TaskManagementService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * API Controller for managing tasks
- * 
+ *
  * Handles CRUD operations for tasks including listing, creating,
  * toggling completion status, and deleting tasks.
  */
@@ -28,9 +29,9 @@ class TaskController extends Controller
 
     /**
      * Get all tasks for the authenticated user
-     * 
+     *
      * Returns tasks sorted by creation date (newest first)
-     * 
+     *
      * @return JsonResponse List of tasks or error message
      */
     public function index(): JsonResponse
@@ -38,10 +39,10 @@ class TaskController extends Controller
         try {
             // Fetch all tasks for the current user
             $tasks = $this->service->getTasks();
-            
+
             // Sort tasks by creation date (newest first)
             usort($tasks, fn($a, $b) => strtotime($b['created_at'] ?? '') <=> strtotime($a['created_at'] ?? ''));
-            
+
             return response()->json($tasks);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -50,7 +51,7 @@ class TaskController extends Controller
 
     /**
      * Create a new task
-     * 
+     *
      * @param Request $request HTTP request with task data
      * @return JsonResponse Created task or error message
      */
@@ -83,6 +84,14 @@ class TaskController extends Controller
             // Create the task in Redis
             $created = $this->service->createEntity(KeyType::Task, $task);
 
+            // PUBLIKUJ NOTIFIKACI do Redis Pub/Sub
+            $redis = Redis::connection()->client();
+            $redis->publish('tasks:new', json_encode([
+                'type' => 'task_created',
+                'task' => $created,
+                'timestamp' => now()->toISOString()
+            ]));
+
             return response()->json($created, 201);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -91,7 +100,7 @@ class TaskController extends Controller
 
     /**
      * Toggle the completion status of a task
-     * 
+     *
      * @param int $id Task ID
      * @return JsonResponse Updated task or error message
      */
@@ -117,8 +126,18 @@ class TaskController extends Controller
             // Update the task
             $this->service->updateEntity(KeyType::Task, $updateObject, $id);
 
+            // Get updated task and publish notification
+            $updatedTask = RedisConnection::getKey($key);
+
+            $redis = Redis::connection()->client();
+            $redis->publish('tasks:updated', json_encode([
+                'type' => 'task_toggled',
+                'task' => $updatedTask,
+                'timestamp' => now()->toISOString()
+            ]));
+
             // Return the updated task
-            return response()->json(RedisConnection::getKey($key), 201);
+            return response()->json($updatedTask, 201);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -126,7 +145,7 @@ class TaskController extends Controller
 
     /**
      * Delete a task
-     * 
+     *
      * @param int $id Task ID
      * @return JsonResponse Success message or error
      */
@@ -135,10 +154,41 @@ class TaskController extends Controller
         try {
             // Delete the task (with authorization check inside service)
             $this->service->deleteEntity(KeyType::Task, $id);
-            
+
+            // Publish deletion notification
+            $redis = Redis::connection()->client();
+            $redis->publish('tasks:deleted', json_encode([
+                'type' => 'task_deleted',
+                'task_id' => $id,
+                'timestamp' => now()->toISOString()
+            ]));
+
             return response()->json(['message' => 'Task deleted successfully']);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Subscribe to real-time task updates via Server-Sent Events
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function subscribe()
+    {
+        return response()->stream(function () {
+            $redis = Redis::connection()->client();
+
+            // Subscribe to all task channels
+            $redis->subscribe(['tasks:new', 'tasks:updated', 'tasks:deleted'], function ($message) {
+                echo "data: " . $message . "\n\n";
+                ob_flush();
+                flush();
+            });
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 }

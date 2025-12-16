@@ -30,4 +30,7 @@ Route::middleware('auth.jwt')->group(function () {
     Route::post('/tasks/create', [TaskController::class, 'store']);
     Route::put('/tasks/{id}/toggle', [TaskController::class, 'toggle']);
     Route::delete('/tasks/{id}/delete', [TaskController::class, 'destroy']);
+
+    // Real-time subscription
+    Route::get('/tasks/subscribe', [TaskController::class, 'subscribe']);
 });
