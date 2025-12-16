@@ -31,8 +31,6 @@ RUN git config --global --add safe.directory /app
 # Multistage COPY -> composer gets pulled temporarily and copied into docker container
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-RUN composer install
-
 # Copy the entrypoint script
 COPY bin/docker/composer-app/entrypoint.sh /usr/local/bin/entrypoint.sh
 

@@ -3,6 +3,8 @@
 # Exit on error
 set -e
 
+composer install --no-interaction --prefer-dist
+
 # Function to display help message
 show_help() {
   echo "Available commands:"

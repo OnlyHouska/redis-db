@@ -22,6 +22,4 @@ RUN rm -rf /var/lib/apt/lists/*
 
 RUN git config --global --add safe.directory /app
 
-RUN npm install
-
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm install && npm run dev"]
