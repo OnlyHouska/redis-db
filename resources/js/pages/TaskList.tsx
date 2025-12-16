@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Task, { TaskData } from '../components/Task';
 import CreateTaskModal, { NewTaskData } from '../components/CreateTaskModal';
+import {setAuthToken} from "../utils/auth";
 
 /**
  * Task list page component
@@ -150,10 +151,8 @@ const TaskList: React.FC = () => {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            // Clear local auth data and redirect
-            localStorage.removeItem('token');
+            setAuthToken(null);
             localStorage.removeItem('user');
-            delete axios.defaults.headers.common['Authorization'];
             navigate('/');
         }
     };

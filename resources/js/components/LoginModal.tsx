@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { setAuthToken } from '../utils/auth';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -30,7 +31,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         });
     };
 
-    // Submit login credentials and handle authentication
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
@@ -38,9 +38,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         try {
             const response = await axios.post('/api/auth/login', formData);
-            // Store auth token and user data
-            localStorage.setItem('token', response.data.token);
+
+            setAuthToken(response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+
             setFormData({ email: '', password: '' });
             onClose();
             navigate('/tasks');
