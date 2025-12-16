@@ -29,7 +29,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ../../redis-data:/data
+      - redis-data:/data
     restart: unless-stopped
 
   redis-insight:
@@ -52,3 +52,6 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       - redis-insight
+
+volumes:
+  redis-data:

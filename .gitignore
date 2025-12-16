@@ -49,5 +49,3 @@ yarn-error.log
 
 # Docker junk
 /.docker-compose.override.yml
-
-/redis-data
