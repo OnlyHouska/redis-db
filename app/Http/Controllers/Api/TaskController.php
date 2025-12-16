@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Constants\Category;
 use App\Constants\KeyType;
 use App\Http\Controllers\Controller;
 use App\Http\RedisConnection;
@@ -37,6 +38,10 @@ class TaskController extends Controller
         ]);
 
         try {
+            if (!in_array($validated['category'], Category::values())) {
+                return response()->json(['error' => 'Invalid category'], 401);
+            }
+
             $task = [
                 'title'         => $validated['title'],
                 'description'   => $validated['description'],

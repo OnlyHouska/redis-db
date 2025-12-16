@@ -15,7 +15,7 @@ docker compose up
 ## Backend
 
 - [ ] Redis Streams *(Lukáš)*
-- [ ] limit category to a specified set of values *(Lukáš)*
+- [x] limit category to a specified set of values *(Lukáš)*
 - [ ] edit README file *(Lukáš)*
 - [x] configure data persistence *(Lukáš)*
 - [x] change access ports to 3000 for frontend and 8001 for RedisInsight *(Lukáš)*
