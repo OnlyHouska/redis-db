@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Task, { TaskData } from '../components/Task';
@@ -20,6 +20,9 @@ const TaskList: React.FC = () => {
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
     const [notification, setNotification] = useState<string>('');
 
+    // Use useRef instead of useState for tracking IDs - doesn't trigger re-renders
+    const lastTaskIdsRef = useRef<Set<number>>(new Set());
+
     const categories = [
         'Mathematics',
         'Programming',
@@ -37,8 +40,37 @@ const TaskList: React.FC = () => {
         if (userData) {
             setUser(JSON.parse(userData));
         }
+
         fetchTasks();
+
+        const pollInterval = setInterval(() => {
+            fetchTasksQuietly();
+        }, 2000);
+
     }, []);
+
+    const fetchTasksQuietly = async () => {
+        try {
+            const response = await axios.get<TaskData[]>('/api/tasks');
+            const currentTaskIds = new Set(response.data.map(t => t.id));
+
+            // Find new task IDs
+            const newTaskIds = [...currentTaskIds].filter(id => !lastTaskIdsRef.current.has(id));
+
+            if (newTaskIds.length > 0) {
+                const newTask = response.data.find(t => t.id === newTaskIds[0]);
+                if (newTask) {
+                    setNotification(`New task created: ${newTask.title}`);
+                    setTimeout(() => setNotification(''), 5000);
+                }
+            }
+
+            setTasks(response.data);
+            lastTaskIdsRef.current = currentTaskIds;
+        } catch (error) {
+            // Silent fail for polling errors
+        }
+    };
 
     // Fetch tasks from API
     const fetchTasks = async () => {
